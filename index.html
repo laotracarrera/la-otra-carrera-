@@ -451,5 +451,93 @@
     el.addEventListener('click', () => showPanel(el.dataset.back));
   });
 </script>
+<style>
+  .monito-wrapper {
+    display: flex;
+    justify-content: center;
+    margin-bottom: -20px;
+    position: relative;
+    z-index: 1;
+  }
+  .monito-footer-img {
+    width: 140px;
+    height: auto;
+    transition: transform .15s;
+  }
+  .monito-footer-img.shake {
+    animation: monitoShake .4s ease;
+  }
+  @keyframes monitoShake {
+    0%   { transform: rotate(0deg) translateY(0); }
+    20%  { transform: rotate(-8deg) translateY(-6px); }
+    40%  { transform: rotate(7deg) translateY(-10px); }
+    60%  { transform: rotate(-5deg) translateY(-4px); }
+    80%  { transform: rotate(3deg) translateY(0); }
+    100% { transform: rotate(0deg) translateY(0); }
+  }
+
+  .footer-social {
+    display: flex;
+    justify-content: center;
+    gap: 24px;
+    padding: 32px 0;
+    position: relative;
+    background: #000;
+  }
+  .footer-social a, .footer-social button {
+    background: #000;
+    border: 2px solid #fff;
+    border-radius: 50%;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #fff;
+    transition: transform .15s;
+  }
+  .footer-social a:active, .footer-social button:active {
+    transform: scale(0.9);
+  }
+
+  .social-tooltip {
+    position: fixed;
+    bottom: 90px;
+    left: 50%;
+    transform: translateX(-50%) scale(0.9);
+    background: #000;
+    color: #fff;
+    border: 3px solid #fff;
+    padding: 12px 20px;
+    border-radius: 4px;
+    font-family: inherit;
+    font-weight: 800;
+    font-size: 13px;
+    letter-spacing: .5px;
+    text-transform: uppercase;
+    max-width: 260px;
+    text-align: center;
+    display: none;
+    z-index: 999;
+    box-shadow: 4px 4px 0 #fff;
+    opacity: 0;
+    transition: opacity .15s, transform .15s;
+  }
+  .social-tooltip.show {
+    display: block;
+    opacity: 1;
+    transform: translateX(-50%) scale(1);
+  }
+</style>
+
+<div class="monito-wrapper">
+  <img src="images/monito-footer.jpg" alt="Monito de La Otra Carrera" class="monito-footer-img" id="monitoImg">
+</div>
+
+<footer class="footer-social">
+  <a href="https://github.com/laotracarrera/la-otra-carrera-" target="_blank" aria-label="GitHub">
+    <svg width="22" height="22" viewBox="0 0 16 16" fill="currentColor">
+      
 </body>
 </html>
