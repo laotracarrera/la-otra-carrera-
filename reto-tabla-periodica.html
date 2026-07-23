@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reto: Tabla Periódica Completa</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=JetBrains+Mono:wght@600;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0b1220; --card:#16223a; --line:#243252; --text:#eef2ff; --dim:#8ea0c9;
+    --accent:#5eead4; --accent2:#fbbf24; --wrong:#fb7185; --right:#4ade80;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;min-height:100%;}
+  body{
+    background:
+      radial-gradient(circle at 15% 8%, rgba(94,234,212,.10), transparent 40%),
+      radial-gradient(circle at 85% 90%, rgba(251,191,36,.08), transparent 45%),
+      var(--bg);
+    color:var(--text); font-family:'Space Grotesk',sans-serif;
+    display:flex; justify-content:center; padding:26px 16px 60px;
+  }
+  #app{ width:100%; max-width:480px; }
+  .eyebrow{ font-family:'JetBrains Mono',monospace; font-weight:800; font-size:11px; letter-spacing:.2em; color:var(--accent); text-transform:uppercase; }
+  h1{ font-size:24px; margin:8px 0 4px; font-weight:700; }
+  .subtitle{ color:var(--dim); font-size:13.5px; line-height:1.5; }
+  header{ text-align:center; margin-bottom:20px; }
+
+  .screen{ display:none; }
+  .screen.active{ display:block; }
+
+  /* ---- menu ---- */
+  .seg-card{
+    background:var(--card); border:1px solid var(--line); border-radius:16px;
+    padding:16px 18px; margin-bottom:12px; cursor:pointer; display:flex; align-items:center; gap:14px;
+    transition:border-color .15s, transform .1s;
+  }
+  .seg-card:hover{ border-color:var(--accent); transform:translateY(-1px); }
+  .seg-num{
+    width:46px; height:46px; border-radius:12px; background:rgba(94,234,212,.12); color:var(--accent);
+    display:flex; align-items:center; justify-content:center; font-family:'JetBrains Mono',monospace; font-weight:800; font-size:14px; flex-shrink:0;
+  }
+  .seg-title{ font-weight:700; font-size:15.5px; }
+  .seg-sub{ color:var(--dim); font-size:12.5px; margin-top:2px; }
+  .seg-arrow{ margin-left:auto; color:var(--dim); font-size:20px; }
+
+  #explore-btn{
+    width:100%; margin-top:6px; padding:14px; border:1.5px dashed var(--line); border-radius:14px;
+    background:transparent; color:var(--dim); font-family:'Space Grotesk',sans-serif; font-weight:700;
+    font-size:14.5px; cursor:pointer;
+  }
+  #explore-btn:hover{ border-color:var(--accent2); color:var(--accent2); }
+
+  /* ---- quiz ---- */
+  #progress-wrap{ height:8px; background:var(--line); border-radius:99px; overflow:hidden; margin:18px 0 22px; }
+  #progress-fill{ height:100%; width:0%; background:linear-gradient(90deg,var(--accent),var(--accent2)); transition:width .35s ease; }
+  .card{ background:var(--card); border:1px solid var(--line); border-radius:20px; padding:24px 20px; box-shadow:0 20px 40px rgba(0,0,0,.35); }
+  .back-link{ display:inline-block; color:var(--dim); font-family:'JetBrains Mono',monospace; font-size:12px; margin-bottom:14px; cursor:pointer; }
+  .back-link:hover{ color:var(--accent); }
+
+  #q-meta{ display:flex; justify-content:space-between; font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--dim); margin-bottom:14px; }
+  #q-meta .tag{ background:rgba(94,234,212,.12); color:var(--accent); padding:3px 10px; border-radius:99px; font-weight:800; }
+  #q-text{ font-size:20px; font-weight:700; line-height:1.35; margin-bottom:20px; }
+  #q-text .hl{ font-family:'JetBrains Mono',monospace; color:var(--accent2); }
+
+  .opt{
+    width:100%; text-align:left; background:#0f1a2e; border:1.5px solid var(--line); color:var(--text);
+    font-family:'Space Grotesk',sans-serif; font-size:15.5px; font-weight:600; padding:13px 15px;
+    border-radius:12px; margin-bottom:9px; cursor:pointer; transition:border-color .15s, transform .1s;
+  }
+  .opt:hover:not(:disabled){ border-color:var(--accent); transform:translateY(-1px); }
+  .opt:disabled{ cursor:default; }
+  .opt.correct{ background:rgba(74,222,128,.14); border-color:var(--right); color:var(--right); }
+  .opt.wrong{ background:rgba(251,113,133,.14); border-color:var(--wrong); color:var(--wrong); }
+  .opt.dim{ opacity:.4; }
+
+  #feedback{ margin-top:14px; font-size:14px; font-weight:600; min-height:20px; }
+  #feedback.ok{ color:var(--right); } #feedback.bad{ color:var(--wrong); }
+
+  #fact-box{
+    display:none; margin-top:14px; background:#0f1a2e; border-left:3px solid var(--accent2);
+    border-radius:0 10px 10px 0; padding:12px 14px; font-size:13.5px; color:var(--dim); line-height:1.5;
+  }
+  #fact-box b{ color:var(--text); }
+
+  #next-btn{
+    display:none; margin-top:16px; width:100%; padding:13px; border:none; border-radius:12px;
+    background:var(--accent); color:#062018; font-weight:700; font-size:15.5px; cursor:pointer;
+  }
+
+  /* ---- result ---- */
+  #result .score{ font-family:'JetBrains Mono',monospace; font-weight:800; font-size:52px; color:var(--accent2); margin:8px 0; text-align:center; }
+  #result .msg{ font-size:15px; color:var(--text); margin-bottom:20px; line-height:1.5; text-align:center; }
+  .result-actions{ display:flex; flex-direction:column; gap:10px; }
+  .btn-primary{ width:100%; padding:13px; border:none; border-radius:12px; background:var(--accent2); color:#241800; font-weight:700; font-size:15px; cursor:pointer; }
+  .btn-secondary{ width:100%; padding:13px; border:1.5px solid var(--line); border-radius:12px; background:transparent; color:var(--text); font-weight:700; font-size:15px; cursor:pointer; }
+
+  /* ---- explore ---- */
+  .explore-item{ background:var(--card); border:1px solid var(--line); border-radius:14px; padding:14px 16px; margin-bottom:10px; }
+  .explore-head{ display:flex; align-items:baseline; gap:10px; margin-bottom:5px; }
+  .explore-num{ font-family:'JetBrains Mono',monospace; color:var(--dim); font-size:12px; }
+  .explore-symbol{ font-family:'JetBrains Mono',monospace; color:var(--accent); font-weight:800; font-size:16px; }
+  .explore-name{ font-weight:700; font-size:15px; }
+  .explore-fact{ color:var(--dim); font-size:13px; line-height:1.5; }
+
+  .foot{ text-align:center; color:var(--dim); font-size:12px; margin-top:22px; font-family:'JetBrains Mono',monospace; }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ===== MENU ===== -->
+  <div class="screen active" id="screen-menu">
+    <header>
+      <div class="eyebrow">Laboratorio de Química</div>
+      <h1>⚗️ Reto: Tabla Periódica</h1>
+      <div class="subtitle">Los 118 elementos, en 6 tandas. Elige por dónde partir.</div>
+    </header>
+    <div id="seg-list"></div>
+    <button id="explore-btn">📖 Ver los 118 elementos con su explicación</button>
+    <div class="foot">hecho a mano para ti 🧪</div>
+  </div>
+
+  <!-- ===== QUIZ ===== -->
+  <div class="screen" id="screen-quiz">
+    <span class="back-link" id="quiz-back">← volver al menú</span>
+    <div id="progress-wrap"><div id="progress-fill"></div></div>
+    <div class="card" id="quiz-card">
+      <div id="q-meta"><span id="q-count"></span><span class="tag" id="q-score">0 pts</span></div>
+      <div id="q-text"></div>
+      <div id="options"></div>
+      <div id="feedback"></div>
+      <div id="fact-box"></div>
+      <button id="next-btn">Siguiente →</button>
+    </div>
+  </div>
+
+  <!-- ===== RESULT ===== -->
+  <div class="screen" id="screen-result">
+    <div class="card" id="result">
+      <div class="eyebrow" style="text-align:center;">Resultado del segmento</div>
+      <div class="score" id="score-num">0/0</div>
+      <div class="msg" id="score-msg"></div>
+      <div class="result-actions">
+        <button class="btn-primary" id="repeat-btn">Repetir este segmento</button>
+        <button class="btn-primary" id="next-seg-btn" style="display:none;">Siguiente segmento →</button>
+        <button class="btn-secondary" id="menu-btn">Volver al menú</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== EXPLORE ===== -->
+  <div class="screen" id="screen-explore">
+    <span class="back-link" id="explore-back">← volver al menú</span>
+    <header style="margin-bottom:14px;">
+      <div class="eyebrow">Guía completa</div>
+      <h1 style="font-size:20px;">Los 118 elementos</h1>
+    </header>
+    <div id="explore-list"></div>
+    <div class="foot">hecho a mano para ti 🧪</div>
+  </div>
+
+</div>
+
+<script>
+// numero, nombre, simbolo, dato
+const ELEMENTS = [
+[1,"Hidrógeno","H","El elemento más simple y abundante del universo; las estrellas lo queman para brillar."],
+[2,"Helio","He","Gas que hace flotar los globos y vuelve tu voz aguda si lo respiras."],
+[3,"Litio","Li","Se usa en las baterías de tu celular y notebook."],
+[4,"Berilio","Be","Metal liviano y duro usado en telescopios espaciales."],
+[5,"Boro","B","Se usa en el vidrio resistente al calor (tipo Pyrex)."],
+[6,"Carbono","C","La base de toda la vida en la Tierra; también forma el diamante y el grafito."],
+[7,"Nitrógeno","N","Casi el 80% del aire que respiras es este gas."],
+[8,"Oxígeno","O","El gas que necesitas respirar para vivir."],
+[9,"Flúor","F","Se agrega a la pasta de dientes para proteger el esmalte."],
+[10,"Neón","Ne","El gas que le da su brillo a los carteles de neón."],
+[11,"Sodio","Na","Junto al cloro forma la sal de mesa."],
+[12,"Magnesio","Mg","Metal que arde con una luz blanca muy brillante."],
+[13,"Aluminio","Al","El metal liviano de las latas de bebida y el papel aluminio."],
+[14,"Silicio","Si","La base de todos los chips y computadores."],
+[15,"Fósforo","P","Brilla en la oscuridad; le dio el nombre a los fósforos de encender."],
+[16,"Azufre","S","Huele a huevo podrido y se usa para hacer pólvora."],
+[17,"Cloro","Cl","Desinfecta el agua de las piscinas."],
+[18,"Argón","Ar","Gas que se usa dentro de las ampolletas para que el filamento no se queme."],
+[19,"Potasio","K","Está en los plátanos y ayuda a tus músculos a funcionar."],
+[20,"Calcio","Ca","El mineral que fortalece tus huesos y dientes."],
+[21,"Escandio","Sc","Metal raro usado en bates de béisbol y bicicletas de alta gama."],
+[22,"Titanio","Ti","Metal súper fuerte y liviano usado en aviones e implantes médicos."],
+[23,"Vanadio","V","Se mezcla con acero para hacer herramientas más resistentes."],
+[24,"Cromo","Cr","Le da el brillo plateado a las llantas y grifos."],
+[25,"Manganeso","Mn","Se usa para endurecer el acero."],
+[26,"Hierro","Fe","El metal más usado del mundo; también está en tu sangre."],
+[27,"Cobalto","Co","Le da el color azul intenso a vidrios y cerámicas."],
+[28,"Níquel","Ni","Se usa en monedas y baterías recargables."],
+[29,"Cobre","Cu","Excelente conductor, está en casi todos los cables eléctricos."],
+[30,"Zinc","Zn","Ayuda a tu sistema inmune y recubre el metal para que no se oxide."],
+[31,"Galio","Ga","Metal que se derrite en la palma de tu mano (funde a 30°C)."],
+[32,"Germanio","Ge","Se usa en fibra óptica y componentes electrónicos."],
+[33,"Arsénico","As","Elemento tóxico, famoso como veneno en historias de misterio."],
+[34,"Selenio","Se","Se usó en las primeras celdas solares y fotocopiadoras."],
+[35,"Bromo","Br","Uno de los pocos elementos líquidos a temperatura ambiente."],
+[36,"Kriptón","Kr","Gas noble... y el planeta natal de Superman."],
+[37,"Rubidio","Rb","Se usa en relojes atómicos de alta precisión."],
+[38,"Estroncio","Sr","Le da el color rojo a los fuegos artificiales."],
+[39,"Itrio","Y","Se usa en pantallas LED y superconductores."],
+[40,"Zirconio","Zr","Resiste altísimas temperaturas; se usa en reactores nucleares."],
+[41,"Niobio","Nb","Se usa en imanes superconductores."],
+[42,"Molibdeno","Mo","Fortalece el acero para hacerlo resistente al calor extremo."],
+[43,"Tecnecio","Tc","El primer elemento creado artificialmente por el ser humano."],
+[44,"Rutenio","Ru","Metal raro usado en electrónica y joyería."],
+[45,"Rodio","Rh","Uno de los metales más caros y brillantes; recubre joyas de plata."],
+[46,"Paladio","Pd","Se usa en los catalizadores de los autos para reducir contaminación."],
+[47,"Plata","Ag","Metal precioso, el mejor conductor de electricidad que existe."],
+[48,"Cadmio","Cd","Se usaba en baterías recargables antiguas."],
+[49,"Indio","In","Se usa en las pantallas táctiles de celulares y tablets."],
+[50,"Estaño","Sn","Se usa para soldar componentes electrónicos."],
+[51,"Antimonio","Sb","Se usa para endurecer aleaciones de plomo."],
+[52,"Telurio","Te","Elemento raro que se usa en paneles solares."],
+[53,"Yodo","I","Esencial para tu tiroides; por eso existe la sal yodada."],
+[54,"Xenón","Xe","Se usa en las luces de xenón de algunos autos."],
+[55,"Cesio","Cs","Define la duración exacta de un segundo en los relojes atómicos."],
+[56,"Bario","Ba","Se usa en exámenes médicos de rayos X del estómago."],
+[57,"Lantano","La","Se usa en lentes de cámaras de alta calidad."],
+[58,"Cerio","Ce","El más común de las 'tierras raras'; se usa en encendedores."],
+[59,"Praseodimio","Pr","Le da color verde-amarillo a vidrios y cerámicas."],
+[60,"Neodimio","Nd","Se usa en los imanes más fuertes que existen."],
+[61,"Prometio","Pm","Elemento radiactivo tan raro que casi no existe en la naturaleza."],
+[62,"Samario","Sm","Se usa en imanes especiales resistentes al calor."],
+[63,"Europio","Eu","Se usa en las luces de pantallas y en billetes, contra falsificación."],
+[64,"Gadolinio","Gd","Se usa como contraste en las resonancias magnéticas."],
+[65,"Terbio","Tb","Se usa en pantallas y luces LED de color verde."],
+[66,"Disprosio","Dy","Se usa en discos duros e imanes potentes."],
+[67,"Holmio","Ho","Tiene el magnetismo más fuerte de todos los elementos."],
+[68,"Erbio","Er","Se usa en fibra óptica para el internet de alta velocidad."],
+[69,"Tulio","Tm","Uno de los elementos más raros y caros de las tierras raras."],
+[70,"Iterbio","Yb","Se usa en relojes atómicos de última generación."],
+[71,"Lutecio","Lu","El último de las 'tierras raras'; se usa en investigación médica."],
+[72,"Hafnio","Hf","Se usa en los chips de los procesadores más avanzados."],
+[73,"Tantalio","Ta","Está en casi todos los celulares, en sus condensadores."],
+[74,"Wolframio","W","El metal con el punto de fusión más alto; se usa en filamentos de ampolletas."],
+[75,"Renio","Re","Uno de los elementos más raros de la Tierra."],
+[76,"Osmio","Os","El elemento natural más denso que existe."],
+[77,"Iridio","Ir","Extremadamente resistente a la corrosión; se usa en puntas de plumas fuente."],
+[78,"Platino","Pt","Metal precioso usado en joyería y catalizadores de autos."],
+[79,"Oro","Au","El metal precioso por excelencia: no se oxida ni se opaca."],
+[80,"Mercurio","Hg","El único metal líquido a temperatura ambiente."],
+[81,"Talio","Tl","Elemento muy tóxico, usado antiguamente como veneno para ratas."],
+[82,"Plomo","Pb","Metal pesado; antes se usaba en cañerías y pinturas."],
+[83,"Bismuto","Bi","Forma cristales con colores de arcoíris, ¡muy bonito!"],
+[84,"Polonio","Po","Elemento radiactivo descubierto por Marie Curie."],
+[85,"Astato","At","Uno de los elementos más raros de la Tierra; casi no se puede estudiar."],
+[86,"Radón","Rn","Gas radiactivo que puede acumularse en sótanos mal ventilados."],
+[87,"Francio","Fr","Extremadamente radiactivo y raro; existe solo en cantidades mínimas."],
+[88,"Radio","Ra","Elemento radiactivo descubierto por Marie Curie; brillaba en la oscuridad."],
+[89,"Actinio","Ac","Elemento radiactivo que le da nombre a la serie de los actínidos."],
+[90,"Torio","Th","Se investiga como combustible nuclear alternativo."],
+[91,"Protactinio","Pa","Elemento raro y radiactivo, muy difícil de aislar."],
+[92,"Uranio","U","Combustible de las centrales nucleares."],
+[93,"Neptunio","Np","El primer elemento transuránico descubierto."],
+[94,"Plutonio","Pu","Se usa como combustible en reactores nucleares y sondas espaciales."],
+[95,"Americio","Am","Está en los detectores de humo de tu casa."],
+[96,"Curio","Cm","Nombrado en honor a Marie y Pierre Curie."],
+[97,"Berkelio","Bk","Elemento sintético, nombrado por la ciudad de Berkeley."],
+[98,"Californio","Cf","Elemento sintético, nombrado por California."],
+[99,"Einstenio","Es","Elemento sintético nombrado en honor a Albert Einstein."],
+[100,"Fermio","Fm","Nombrado en honor al físico Enrico Fermi."],
+[101,"Mendelevio","Md","Nombrado en honor a Dmitri Mendeléyev, creador de la tabla periódica."],
+[102,"Nobelio","No","Nombrado en honor a Alfred Nobel."],
+[103,"Laurencio","Lr","Nombrado en honor a Ernest Lawrence, inventor del ciclotrón."],
+[104,"Rutherfordio","Rf","Nombrado en honor a Ernest Rutherford."],
+[105,"Dubnio","Db","Nombrado por la ciudad rusa de Dubná."],
+[106,"Seaborgio","Sg","Nombrado en honor al químico Glenn Seaborg."],
+[107,"Bohrio","Bh","Nombrado en honor al físico Niels Bohr."],
+[108,"Hasio","Hs","Nombrado por el estado alemán de Hesse."],
+[109,"Meitnerio","Mt","Nombrado en honor a la física Lise Meitner."],
+[110,"Darmstatio","Ds","Nombrado por la ciudad de Darmstadt, Alemania."],
+[111,"Roentgenio","Rg","Nombrado en honor a Wilhelm Röntgen, descubridor de los rayos X."],
+[112,"Copernicio","Cn","Nombrado en honor al astrónomo Nicolás Copérnico."],
+[113,"Nihonio","Nh","Nombrado por Japón ('Nihon'), donde fue descubierto."],
+[114,"Flerovio","Fl","Nombrado por el Laboratorio Flerov de Rusia."],
+[115,"Moscovio","Mc","Nombrado por la región de Moscú, Rusia."],
+[116,"Livermorio","Lv","Nombrado por el Laboratorio Lawrence Livermore de EE.UU."],
+[117,"Teneso","Ts","Nombrado por el estado de Tennessee, EE.UU."],
+[118,"Oganesón","Og","Nombrado en honor a Yuri Oganesián: ¡el único elemento nombrado por alguien que seguía vivo!"]
+];
+
+function makeSegments(){
+  const segs = [];
+  let start = 0;
+  while(start < ELEMENTS.length){
+    const chunk = ELEMENTS.slice(start, start+21);
+    segs.push(chunk);
+    start += 21;
+  }
+  return segs;
+}
+const SEGMENTS = makeSegments();
+
+function shuffle(arr){
+  const a = arr.slice();
+  for(let i=a.length-1;i>0;i--){ const j = Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; }
+  return a;
+}
+
+function buildQuestions(segmentElements){
+  const pool = shuffle(segmentElements);
+  return pool.map(el => {
+    const [num, name, symbol, fact] = el;
+    const askSymbol = Math.random() < 0.5;
+    let correct, prompt, wrongPool;
+    if(askSymbol){
+      correct = symbol;
+      prompt = `¿Cuál es el <span class="hl">símbolo</span> de <b>${name}</b>?`;
+      wrongPool = ELEMENTS.filter(e => e[2] !== symbol).map(e => e[2]);
+    } else {
+      correct = name;
+      prompt = `¿Qué elemento tiene el símbolo <span class="hl">${symbol}</span>?`;
+      wrongPool = ELEMENTS.filter(e => e[1] !== name).map(e => e[1]);
+    }
+    const wrongs = shuffle(wrongPool).slice(0,3);
+    const options = shuffle([correct, ...wrongs]);
+    return { prompt, correct, options, num, name, symbol, fact };
+  });
+}
+
+// ---- state ----
+let currentSegIdx = 0;
+let questions = [];
+let idx = 0;
+let score = 0;
+let answered = false;
+
+// ---- elements ----
+const screens = {
+  menu: document.getElementById('screen-menu'),
+  quiz: document.getElementById('screen-quiz'),
+  result: document.getElementById('screen-result'),
+  explore: document.getElementById('screen-explore'),
+};
+function showScreen(name){
+  Object.values(screens).forEach(s => s.classList.remove('active'));
+  screens[name].classList.add('active');
+  window.scrollTo(0,0);
+}
+
+// ---- menu ----
+const segList = document.getElementById('seg-list');
+SEGMENTS.forEach((seg, i) => {
+  const first = seg[0][0], last = seg[seg.length-1][0];
+  const card = document.createElement('div');
+  card.className = 'seg-card';
+  card.innerHTML = `
+    <div class="seg-num">${i+1}</div>
+    <div>
+      <div class="seg-title">Segmento ${i+1}</div>
+      <div class="seg-sub">Elementos ${first} al ${last} · ${seg.length} preguntas</div>
+    </div>
+    <div class="seg-arrow">→</div>`;
+  card.addEventListener('click', () => startSegment(i));
+  segList.appendChild(card);
+});
+
+document.getElementById('explore-btn').addEventListener('click', () => {
+  renderExplore();
+  showScreen('explore');
+});
+document.getElementById('explore-back').addEventListener('click', () => showScreen('menu'));
+document.getElementById('quiz-back').addEventListener('click', () => showScreen('menu'));
+document.getElementById('menu-btn').addEventListener('click', () => showScreen('menu'));
+
+function startSegment(i){
+  currentSegIdx = i;
+  questions = buildQuestions(SEGMENTS[i]);
+  idx = 0; score = 0;
+  showScreen('quiz');
+  renderQuestion();
+}
+
+// ---- quiz ----
+const qCount = document.getElementById('q-count');
+const qScore = document.getElementById('q-score');
+const qText = document.getElementById('q-text');
+const optionsEl = document.getElementById('options');
+const feedback = document.getElementById('feedback');
+const factBox = document.getElementById('fact-box');
+const nextBtn = document.getElementById('next-btn');
+const progressFill = document.getElementById('progress-fill');
+
+function renderQuestion(){
+  answered = false;
+  const q = questions[idx];
+  qCount.textContent = `Segmento ${currentSegIdx+1} · Pregunta ${idx+1}/${questions.length}`;
+  qScore.textContent = `${score} pts`;
+  qText.innerHTML = q.prompt;
+  progressFill.style.width = (idx/questions.length*100) + '%';
+  feedback.textContent = ''; feedback.className = '';
+  factBox.style.display = 'none'; factBox.innerHTML = '';
+  nextBtn.style.display = 'none';
+
+  optionsEl.innerHTML = '';
+  q.options.forEach(opt => {
+    const btn = document.createElement('button');
+    btn.className = 'opt';
+    btn.textContent = opt;
+    btn.addEventListener('click', () => selectAnswer(btn, opt, q));
+    optionsEl.appendChild(btn);
+  });
+}
+
+function selectAnswer(btn, opt, q){
+  if(answered) return;
+  answered = true;
+  optionsEl.querySelectorAll('.opt').forEach(b => {
+    b.disabled = true;
+    if(b.textContent === q.correct) b.classList.add('correct');
+    else if(b === btn) b.classList.add('wrong');
+    else b.classList.add('dim');
+  });
+
+  if(opt === q.correct){ score++; feedback.textContent = '¡Correcto! 🎉'; feedback.className = 'ok'; }
+  else { feedback.textContent = `Ups, era ${q.correct}.`; feedback.className = 'bad'; }
+
+  factBox.style.display = 'block';
+  factBox.innerHTML = `<b>${q.num}. ${q.name} (${q.symbol})</b><br>${q.fact}`;
+  qScore.textContent = `${score} pts`;
+  nextBtn.style.display = 'block';
+}
+
+nextBtn.addEventListener('click', () => {
+  idx++;
+  if(idx < questions.length) renderQuestion();
+  else showResult();
+});
+
+// ---- result ----
+const scoreNum = document.getElementById('score-num');
+const scoreMsg = document.getElementById('score-msg');
+const repeatBtn = document.getElementById('repeat-btn');
+const nextSegBtn = document.getElementById('next-seg-btn');
+
+function showResult(){
+  showScreen('result');
+  scoreNum.textContent = `${score}/${questions.length}`;
+  const pct = score/questions.length;
+  let msg;
+  if(pct === 1) msg = "¡Perfecto! Te sabes este segmento al derecho y al revés. 🏆";
+  else if(pct >= 0.8) msg = "¡Muy bien! Te lo sabes casi todo. 💪";
+  else if(pct >= 0.6) msg = "Vas bien, repasa un par y la próxima lo rompes todo. 👍";
+  else msg = "Buen intento — repasa la guía y vuelve a jugar, vas a mejorar rápido. 🔬";
+  scoreMsg.textContent = msg;
+
+  if(currentSegIdx < SEGMENTS.length - 1){
+    nextSegBtn.style.display = 'block';
+  } else {
+    nextSegBtn.style.display = 'none';
+  }
+}
+
+repeatBtn.addEventListener('click', () => startSegment(currentSegIdx));
+nextSegBtn.addEventListener('click', () => startSegment(currentSegIdx + 1));
+
+// ---- explore ----
+function renderExplore(){
+  const list = document.getElementById('explore-list');
+  list.innerHTML = '';
+  ELEMENTS.forEach(([num,name,symbol,fact]) => {
+    const item = document.createElement('div');
+    item.className = 'explore-item';
+    item.innerHTML = `
+      <div class="explore-head">
+        <span class="explore-num">#${num}</span>
+        <span class="explore-symbol">${symbol}</span>
+        <span class="explore-name">${name}</span>
+      </div>
+      <div class="explore-fact">${fact}</div>`;
+    list.appendChild(item);
+  });
+}
+</script>
+</body>
+</html>
